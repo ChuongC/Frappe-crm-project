@@ -1,0 +1,3 @@
+frappe
+crm
+crm_chat_override
