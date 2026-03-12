@@ -1,0 +1,100 @@
+<script setup>
+import { ref, nextTick } from 'vue'
+import { useChatStore } from '@/stores/chat'
+
+const chatStore = useChatStore()
+
+const editingId    = ref(null)
+const editingName  = ref('')
+const editInputRef = ref(null)
+
+const startEdit = async (conv) => {
+  editingId.value   = conv.id
+  editingName.value = conv.name
+  await nextTick()
+  editInputRef.value?.focus()
+  editInputRef.value?.select()
+}
+const commitEdit = async () => {
+  if (editingId.value) await chatStore.renameConversation(editingId.value, editingName.value)
+  editingId.value = null; editingName.value = ''
+}
+const cancelEdit = () => { editingId.value = null; editingName.value = '' }
+
+const confirmDeleteId = ref(null)
+const askDelete     = (id) => { confirmDeleteId.value = id }
+const confirmDelete = async () => {
+  if (confirmDeleteId.value) await chatStore.deleteConversation(confirmDeleteId.value)
+  confirmDeleteId.value = null
+}
+const cancelDelete  = () => { confirmDeleteId.value = null }
+</script>
+
+<template>
+  <aside class="chat-sidebar" :class="{ 'chat-sidebar--open': chatStore.isSidebarOpen }">
+    <div class="chat-sidebar__inner">
+      <div class="chat-sidebar__head">
+        <div class="chat-sidebar__logo">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Chat AI</span>
+        </div>
+        <button class="icon-btn" @click="chatStore.toggleSidebar" title="Collapse">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+      </div>
+
+      <button class="new-conv-btn" @click="chatStore.createConversation">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New conversation
+      </button>
+
+      <nav class="conv-list">
+        <div v-for="conv in chatStore.conversations" :key="conv.id"
+          class="conv-item" :class="{ 'conv-item--active': chatStore.currentConversationId === conv.id }"
+          @click="editingId !== conv.id && chatStore.switchConversation(conv.id)">
+          <input v-if="editingId === conv.id" ref="editInputRef" v-model="editingName"
+            class="conv-item__input" maxlength="60"
+            @keyup.enter="commitEdit" @keyup.esc="cancelEdit" @blur="commitEdit" @click.stop />
+          <template v-else>
+            <svg class="conv-item__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span class="conv-item__name">{{ conv.name }}</span>
+            <div class="conv-item__actions" @click.stop>
+              <button class="icon-btn icon-btn--sm" title="Rename" @click="startEdit(conv)">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button class="icon-btn icon-btn--sm icon-btn--danger" title="Delete" @click="askDelete(conv.id)">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              </button>
+            </div>
+          </template>
+        </div>
+
+        <div v-if="chatStore.conversations.length === 0" class="conv-list__empty">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <p>No conversations yet</p>
+          <span>Click <b>+ New conversation</b></span>
+        </div>
+      </nav>
+    </div>
+  </aside>
+
+  <button v-if="!chatStore.isSidebarOpen" class="sidebar-reopen" @click="chatStore.toggleSidebar" title="Open sidebar">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+  </button>
+
+  <Teleport to="body">
+    <Transition name="modal-fade">
+      <div v-if="confirmDeleteId" class="modal-overlay" @click.self="cancelDelete">
+        <div class="modal-box">
+          <div class="modal-box__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></div>
+          <h3>Delete conversation?</h3>
+          <p>All messages will be permanently removed.</p>
+          <div class="modal-box__actions">
+            <button class="modal-btn modal-btn--cancel" @click="cancelDelete">Cancel</button>
+            <button class="modal-btn modal-btn--delete" @click="confirmDelete">Delete</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+</template>

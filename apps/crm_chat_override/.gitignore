@@ -1,0 +1,35 @@
+# ── Node / node_modules (anywhere in the repo) ────────────────────────────────
+node_modules/
+**/node_modules/
+
+# ── Frontend build output ─────────────────────────────────────────────────────
+frontend/yarn.lock
+frontend/dist/
+frontend/.vite/
+frontend/.cache/
+
+# ── Built assets (generated at build time, not source) ────────────────────────
+crm_chat_override/public/frontend/
+crm_chat_override/www/crm.html
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# ── Frappe secrets (never commit these) ───────────────────────────────────────
+site_config.json
+common_site_config.json
+.env
+.env.*
+
+# ── OS / editor ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~crm_chat_override/public/node_modules
