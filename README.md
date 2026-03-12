@@ -4,7 +4,9 @@ AI chat assistant embedded into Frappe CRM. Adds a floating popup + full-page ch
 
 Quick Start
 
-bash# 1. Install
+bash
+
+# 1. Install
 ./env/bin/pip install -e apps/crm_chat_override --no-deps
 bench --site crm.localhost install-app crm_chat_override
 bench --site crm.localhost migrate
